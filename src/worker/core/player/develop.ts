@@ -167,6 +167,37 @@ export const bootstrapPot = async (
 	return orderBy(maxOvrs)[Math.floor(0.75 * NUM_SIMULATIONS)];
 };
 
+export const bootstrapFullPot = async (
+	ratings: MinimalPlayerRatings,
+	age: number,
+	srID: string | undefined,
+): Promise<number> => {
+	if (age >= 29) {
+		return ratings.stre;
+	}
+
+	const maxStres = [];
+
+	for (let i = 0; i < NUM_SIMULATIONS; i++) {
+		const copiedRatings = helpers.deepCopy(ratings);
+		let maxStre = ratings.stre;
+
+		for (let ageTemp = age + 1; ageTemp < 30; ageTemp++) {
+			await developSeason(copiedRatings, ageTemp, srID); // Purposely no coachingRank
+
+			const currentStre = copiedRatings.stre;
+
+			if (currentStre > maxStre) {
+				maxStre = currentStre;
+			}
+		}
+
+		maxStres.push(maxStre);
+	}
+
+	return orderBy(maxStres)[Math.floor(0.75 * NUM_SIMULATIONS)];
+};
+
 /**
  * Develop (increase/decrease) player's ratings. This operates on whatever the last row of p.ratings is.
  *
@@ -222,7 +253,9 @@ const develop = async (
 			ratings.ovr = ovr(ratings);
 
 			if (!skipPot) {
-				ratings.pot = await bootstrapPot(ratings, age, p.srID);
+				//ratings.pot = await bootstrapPot(ratings, age, p.srID);
+				ratings.pot = await bootstrapFullPot(ratings, age, p.srID);
+				//ratings.pot = test_new.ovr
 			}
 
 			if (p.hasOwnProperty("pos") && typeof p.pos === "string") {
