@@ -441,11 +441,47 @@ const writeGameStats = async (
 		const score = won
 			? `${results.team[indTeam].stat.pts}-${results.team[indOther].stat.pts}`
 			: `${results.team[indOther].stat.pts}-${results.team[indTeam].stat.pts}`;
-		const endPart = allStarGame
-			? `${tied ? "tie" : won ? "win" : "loss"} in the All-Star Game`
-			: `${tied ? "tie with" : won ? "win over" : "loss to"} the ${
-					g.get("teamInfoCache")[results.team[indOther].id]?.name
-			  }`;
+
+		let endPart = "";
+		if (allStarGame) {
+			endPart = `${tied ? "tie" : won ? "win" : "loss"} in the All-Star Game`;
+		} else {
+			endPart = `${tied ? "tie with" : won ? "win over" : "loss to"} the ${
+				g.get("teamInfoCache")[results.team[indOther].id]?.name
+			}`;
+
+			if (currentRound !== undefined && playoffInfos) {
+				const playoffsByConference = g.get("confs", "current").length === 2;
+
+				const round =
+					currentRound >= numPlayoffRounds - 1
+						? "finals"
+						: currentRound >= numPlayoffRounds - 2
+						? playoffsByConference
+							? "conference finals"
+							: "semifinals"
+						: `${helpers.ordinal(currentRound + 1)} round of the playoffs`;
+
+				const gameNum = playoffInfos[0].won + playoffInfos[0].lost;
+				const numGamesThisRound = g.get("numGamesPlayoffSeries", "current")[
+					currentRound
+				];
+
+				if (numGamesThisRound > 1) {
+					const numGamesToWinSeries = helpers.numGamesToWinSeries(
+						numGamesThisRound,
+					);
+					if (playoffInfos[tw].won === numGamesToWinSeries) {
+						endPart += `, winning the ${round} ${playoffInfos[tw].won}-${playoffInfos[tw].lost}`;
+					} else {
+						endPart += ` during game ${gameNum} of the ${round}`;
+					}
+				} else {
+					endPart += ` in the ${round}`;
+				}
+			}
+		}
+
 		clutchPlay.text += ` in ${
 			results.team[indTeam].stat.pts.toString().charAt(0) === "8" ? "an" : "a"
 		} <a href="${helpers.leagueUrl([
